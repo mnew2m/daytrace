@@ -1,35 +1,45 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { categoryById, fmtDurationShort, fmtTime, nowMinutes } from "@/lib/data";
+import { useRef, useState } from "react";
+import { categoryById, fmtDurationShort, fmtTime } from "@/lib/data";
 import type { TimeBlock } from "@/lib/types";
 
-const hourPx = 56;
-const startHour = 5;
-const endHour = 24;
-const totalHeight = (endHour - startHour) * hourPx;
+const hourPx = 34;
 
 export function DayView({
   blocks,
+  sleepBlock,
+  nowMinutes,
+  startHour,
+  endHour,
   selectedId,
   onSelect,
-  onDraft
+  onDraft,
+  onChangeBlockTime
 }: {
   blocks: TimeBlock[];
+  sleepBlock?: TimeBlock | null;
+  nowMinutes: number;
+  startHour: number;
+  endHour: number;
   selectedId?: string | null;
   onSelect?: (id: string) => void;
   onDraft?: (draft: { start: number; end: number }) => void;
+  onChangeBlockTime?: (id: string, start: number, end: number) => void;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const [drag, setDrag] = useState<{ y1: number; y2: number } | null>(null);
+  const suppressClickRef = useRef<string | null>(null);
+  const [draftDrag, setDraftDrag] = useState<{ y1: number; y2: number } | null>(null);
+  const [blockDrag, setBlockDrag] = useState<{
+    id: string;
+    originY: number;
+    currentY: number;
+    start: number;
+    end: number;
+    moved: boolean;
+  } | null>(null);
   const [hoverY, setHoverY] = useState<number | null>(null);
-
-  useEffect(() => {
-    const scrollParent = trackRef.current?.parentElement;
-    if (!scrollParent) return;
-    const nowY = ((nowMinutes - startHour * 60) / 60) * hourPx;
-    scrollParent.scrollTop = Math.max(0, nowY - 220);
-  }, []);
+  const totalHeight = (endHour - startHour) * hourPx;
 
   function yToMinutes(y: number) {
     return Math.round(((y / hourPx) * 60) / 15) * 15 + startHour * 60;
@@ -40,9 +50,29 @@ export function DayView({
     return rect ? Math.max(0, Math.min(totalHeight, event.clientY - rect.top)) : 0;
   }
 
+  function draggedTime(block: TimeBlock) {
+    if (!blockDrag || blockDrag.id !== block.id) return { start: block.start, end: block.end };
+
+    const duration = blockDrag.end - blockDrag.start;
+    const deltaMinutes = Math.round((((blockDrag.currentY - blockDrag.originY) / hourPx) * 60) / 15) * 15;
+    const minStart = startHour * 60;
+    const maxStart = endHour * 60 - duration;
+    const start = Math.max(minStart, Math.min(maxStart, blockDrag.start + deltaMinutes));
+
+    return { start, end: start + duration };
+  }
+
   const visible = blocks
     .map((block) => ({ ...block, visibleStart: Math.max(block.start, startHour * 60), visibleEnd: Math.min(block.end, endHour * 60) }))
     .filter((block) => block.visibleEnd > block.visibleStart);
+  const visibleSleep = sleepBlock
+    ? {
+        ...sleepBlock,
+        visibleStart: Math.max(sleepBlock.start, startHour * 60),
+        visibleEnd: Math.min(sleepBlock.end, endHour * 60)
+      }
+    : null;
+  const isNowVisible = nowMinutes >= startHour * 60 && nowMinutes <= endHour * 60;
 
   return (
     <div className="day-view">
@@ -60,24 +90,37 @@ export function DayView({
         onMouseDown={(event) => {
           if ((event.target as HTMLElement).closest("[data-block]")) return;
           const y = eventY(event);
-          setDrag({ y1: y, y2: y });
+          setDraftDrag({ y1: y, y2: y });
         }}
         onMouseMove={(event) => {
           const y = eventY(event);
           setHoverY(y);
-          setDrag((current) => (current ? { ...current, y2: y } : null));
+          setBlockDrag((current) => (current ? { ...current, currentY: y, moved: current.moved || Math.abs(y - current.originY) > 4 } : null));
+          setDraftDrag((current) => (current ? { ...current, y2: y } : null));
         }}
         onMouseLeave={() => {
           setHoverY(null);
-          setDrag(null);
+          setDraftDrag(null);
+          setBlockDrag(null);
         }}
         onMouseUp={() => {
-          if (drag && Math.abs(drag.y2 - drag.y1) > 8) {
-            const start = yToMinutes(Math.min(drag.y1, drag.y2));
-            const end = yToMinutes(Math.max(drag.y1, drag.y2));
+          if (blockDrag) {
+            const block = blocks.find((item) => item.id === blockDrag.id);
+            if (block && blockDrag.moved) {
+              const next = draggedTime(block);
+              suppressClickRef.current = block.id;
+              onChangeBlockTime?.(block.id, next.start, next.end);
+            }
+            setBlockDrag(null);
+            return;
+          }
+
+          if (draftDrag && Math.abs(draftDrag.y2 - draftDrag.y1) > 8) {
+            const start = yToMinutes(Math.min(draftDrag.y1, draftDrag.y2));
+            const end = yToMinutes(Math.max(draftDrag.y1, draftDrag.y2));
             onDraft?.({ start, end });
           }
-          setDrag(null);
+          setDraftDrag(null);
         }}
       >
         {Array.from({ length: endHour - startHour }, (_, index) => (
@@ -85,34 +128,71 @@ export function DayView({
             <i />
           </div>
         ))}
-        {hoverY !== null && !drag ? (
+        {hoverY !== null && !draftDrag && !blockDrag ? (
           <div className="hover-line" style={{ top: hoverY }}>
             <span>{fmtTime(yToMinutes(hoverY))}</span>
           </div>
         ) : null}
-        {drag ? (
+        {draftDrag ? (
           <div
             className="draft-range"
             style={{
-              top: Math.min(drag.y1, drag.y2),
-              height: Math.abs(drag.y2 - drag.y1)
+              top: Math.min(draftDrag.y1, draftDrag.y2),
+              height: Math.abs(draftDrag.y2 - draftDrag.y1)
             }}
           >
-            + 새 블록 {fmtTime(yToMinutes(Math.min(drag.y1, drag.y2)))}-{fmtTime(yToMinutes(Math.max(drag.y1, drag.y2)))}
+            + 새 블록 {fmtTime(yToMinutes(Math.min(draftDrag.y1, draftDrag.y2)))}-{fmtTime(yToMinutes(Math.max(draftDrag.y1, draftDrag.y2)))}
+          </div>
+        ) : null}
+        {visibleSleep && visibleSleep.visibleEnd > visibleSleep.visibleStart ? (
+          <div
+            className="sleep-band"
+            style={{
+              top: ((visibleSleep.visibleStart - startHour * 60) / 60) * hourPx,
+              height: Math.max(((visibleSleep.visibleEnd - visibleSleep.visibleStart) / 60) * hourPx, 24)
+            }}
+          >
+            <span>
+              <strong style={{ color: categoryById.sleep.stroke }}>{categoryById.sleep.label}</strong>
+              <em>
+                {sleepLabel(visibleSleep.start)}-{sleepLabel(visibleSleep.end)} · {fmtDurationShort(visibleSleep.end - visibleSleep.start)}
+              </em>
+            </span>
+            <small>{visibleSleep.note}</small>
           </div>
         ) : null}
         {visible.map((block) => {
           const category = categoryById[block.cat];
-          const top = ((block.visibleStart - startHour * 60) / 60) * hourPx;
-          const height = Math.max(((block.visibleEnd - block.visibleStart) / 60) * hourPx, 24);
+          const nextTime = draggedTime(block);
+          const visibleStart = Math.max(nextTime.start, startHour * 60);
+          const visibleEnd = Math.min(nextTime.end, endHour * 60);
+          const top = ((visibleStart - startHour * 60) / 60) * hourPx;
+          const height = Math.max(((visibleEnd - visibleStart) / 60) * hourPx, 24);
+
           return (
             <button
               type="button"
               data-block
               className={`time-block ${selectedId === block.id ? "selected" : ""}`}
               key={block.id}
+              onMouseDown={(event) => {
+                event.stopPropagation();
+                const y = eventY(event);
+                setBlockDrag({
+                  id: block.id,
+                  originY: y,
+                  currentY: y,
+                  start: block.start,
+                  end: block.end,
+                  moved: false
+                });
+              }}
               onClick={(event) => {
                 event.stopPropagation();
+                if (suppressClickRef.current === block.id) {
+                  suppressClickRef.current = null;
+                  return;
+                }
                 onSelect?.(block.id);
               }}
               style={{
@@ -125,17 +205,25 @@ export function DayView({
               <span>
                 <strong style={{ color: category.stroke }}>{category.label}</strong>
                 <em>
-                  {fmtTime(block.start)}-{fmtTime(block.end)} · {fmtDurationShort(block.end - block.start)}
+                  {fmtTime(nextTime.start)}-{fmtTime(nextTime.end)} · {fmtDurationShort(nextTime.end - nextTime.start)}
                 </em>
               </span>
               {height > 36 ? <small>{block.note}</small> : null}
             </button>
           );
         })}
-        <div className="now-line" style={{ top: ((nowMinutes - startHour * 60) / 60) * hourPx }}>
-          <span>지금 {fmtTime(nowMinutes)}</span>
-        </div>
+        {isNowVisible ? (
+          <div className="now-line" style={{ top: ((nowMinutes - startHour * 60) / 60) * hourPx }}>
+            <span>지금 {fmtTime(nowMinutes)}</span>
+          </div>
+        ) : null}
       </div>
     </div>
   );
+}
+
+function sleepLabel(minutes: number) {
+  const day = minutes < 0 ? "어제 " : "오늘 ";
+  const normalized = ((minutes % 1440) + 1440) % 1440;
+  return `${day}${fmtTime(normalized)}`;
 }

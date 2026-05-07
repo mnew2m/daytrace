@@ -1,4 +1,5 @@
 import { categories, goals, todayBlocks } from "@/lib/data";
+import { todayInKoreaPath } from "@/lib/date";
 import { createClient } from "@/lib/supabase/server";
 import type { CategorySlug, Goal, TimeBlock } from "@/lib/types";
 
@@ -24,15 +25,15 @@ export async function getDayData(date: string): Promise<DayData> {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { blocks: todayBlocks, goals, isPreview: true, userId: null };
+    return { blocks: date === todayInKoreaPath() ? todayBlocks : [], goals, isPreview: true, userId: null };
   }
 
   const [startIso, endIso] = dateRangeToIso(date);
   const { data, error } = await supabase
     .from("time_blocks")
     .select("id, starts_at, ends_at, note, categories!inner(slug)")
-    .gte("starts_at", startIso)
     .lt("starts_at", endIso)
+    .gt("ends_at", startIso)
     .order("starts_at", { ascending: true });
 
   if (error) {

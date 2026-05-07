@@ -1,7 +1,7 @@
-import { categoryById, fmtTime, nowMinutes } from "@/lib/data";
+import { categoryById, fmtTime } from "@/lib/data";
 import type { TimeBlock } from "@/lib/types";
 
-export function MiniDayBar({ blocks }: { blocks: TimeBlock[] }) {
+export function MiniDayBar({ blocks, nowMinutes }: { blocks: TimeBlock[]; nowMinutes: number }) {
   return (
     <div className="mini-day">
       <div className="mini-track">

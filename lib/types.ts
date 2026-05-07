@@ -34,6 +34,15 @@ export type AddTimeBlockInput = {
   note?: string;
 };
 
+export type UpdateTimeBlockInput = AddTimeBlockInput & {
+  id: string;
+};
+
+export type DeleteTimeBlockInput = {
+  id: string;
+  date: string;
+};
+
 export type Goal = {
   categoryId: CategorySlug;
   dailyMinutes: number;

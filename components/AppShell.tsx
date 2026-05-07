@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, CalendarDays, LayoutList, Search, Settings, User } from "lucide-react";
+import { Bell, CalendarDays, ChevronLeft, ChevronRight, LayoutList, Search, Settings } from "lucide-react";
+import { AccountMenu } from "./AccountMenu";
 
 function navState(pathname: string, href: string) {
   if (href === "/today") return pathname === "/today" || pathname.startsWith("/today/");
@@ -11,6 +12,9 @@ function navState(pathname: string, href: string) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const currentDate = dateFromPathname(pathname);
+  const previousDate = addDays(currentDate, -1);
+  const nextDate = addDays(currentDate, 1);
 
   return (
     <div className="shell">
@@ -20,15 +24,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span>Daytrace</span>
         </Link>
         <div className="date-switcher">
-          <Link aria-label="이전 날짜" href="/today/2026-05-05" className="icon-button">
-            <CalendarDays size={15} />
+          <Link aria-label="이전 날짜" href={`/today/${formatDatePath(previousDate)}`} className="icon-button">
+            <ChevronLeft size={16} />
           </Link>
           <div className="date-label">
-            <strong>2026년 5월 6일 수요일</strong>
-            <span>오늘</span>
+            <strong>{formatDateLabel(currentDate)}</strong>
+            <span>{isToday(currentDate) ? "오늘" : formatDatePath(currentDate)}</span>
           </div>
-          <Link aria-label="다음 날짜" href="/today/2026-05-07" className="icon-button">
-            <CalendarDays size={15} />
+          <Link aria-label="다음 날짜" href={`/today/${formatDatePath(nextDate)}`} className="icon-button">
+            <ChevronRight size={16} />
           </Link>
         </div>
         <div className="topbar-actions">
@@ -38,9 +42,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <button className="icon-button" aria-label="알림">
             <Bell size={18} />
           </button>
-          <span className="avatar" aria-label="사용자">
-            <User size={17} />
-          </span>
+          <AccountMenu />
         </div>
       </header>
       <div className="shell-body">
@@ -69,4 +71,51 @@ function NavItem({ href, icon, label, active }: { href: string; icon: React.Reac
       <span>{label}</span>
     </Link>
   );
+}
+
+function dateFromPathname(pathname: string) {
+  const match = /^\/today\/(\d{4}-\d{2}-\d{2})/.exec(pathname);
+  if (match) return parseDatePath(match[1]);
+  return todayInKorea();
+}
+
+function parseDatePath(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function todayInKorea() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date());
+  const year = Number(parts.find((part) => part.type === "year")?.value);
+  const month = Number(parts.find((part) => part.type === "month")?.value);
+  const day = Number(parts.find((part) => part.type === "day")?.value);
+  return new Date(year, month - 1, day);
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function formatDatePath(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function formatDateLabel(date: Date) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "short"
+  }).format(date);
+}
+
+function isToday(date: Date) {
+  return formatDatePath(date) === formatDatePath(todayInKorea());
 }

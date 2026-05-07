@@ -1,31 +1,31 @@
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
 :root {
-  --color-brand-100: #0f6cbd;
-  --color-brand-90: #115ea3;
-  --color-brand-80: #0f548c;
-  --color-brand-70: #0c3b5e;
-  --color-brand-tint-60: #ebf3fc;
-  --color-success: #107c10;
-  --color-success-bg: #e6f4e6;
-  --color-warning: #f7630c;
-  --color-warning-bg: #fff4ce;
-  --color-danger: #c50f1f;
-  --color-danger-bg: #fde7e9;
-  --fg-1: #242424;
-  --fg-2: #424242;
-  --fg-3: #616161;
-  --fg-4: #707070;
-  --bg-canvas: #fafafa;
-  --bg-surface: #ffffff;
-  --bg-subtle: #f5f5f5;
-  --stroke-1: #d1d1d1;
-  --stroke-2: #e0e0e0;
-  --stroke-3: #ebebeb;
-  --radius-medium: 4px;
-  --radius-large: 6px;
-  --shadow-4: 0 0 2px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.14);
-  --shadow-8: 0 0 2px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.14);
+  --color-brand-100: #4f7b68;
+  --color-brand-90: #426b59;
+  --color-brand-80: #365848;
+  --color-brand-70: #2f4f40;
+  --color-brand-tint-60: #e5eee8;
+  --color-success: #4f7b68;
+  --color-success-bg: #e5eee8;
+  --color-warning: #bc7a52;
+  --color-warning-bg: #f7ecdf;
+  --color-danger: #c75b52;
+  --color-danger-bg: #f8e7e3;
+  --fg-1: #27312d;
+  --fg-2: #3e4944;
+  --fg-3: #69736d;
+  --fg-4: #879089;
+  --bg-canvas: #f7f5f0;
+  --bg-surface: #fffdf8;
+  --bg-subtle: #f0ece3;
+  --stroke-1: #d7d0c4;
+  --stroke-2: #ded8cc;
+  --stroke-3: #eee8dc;
+  --radius-medium: 12px;
+  --radius-large: 16px;
+  --shadow-4: 0 10px 30px rgba(56, 45, 32, 0.08);
+  --shadow-8: 0 14px 36px rgba(56, 45, 32, 0.14);
   --font-base: "Pretendard", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
 }
 

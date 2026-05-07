@@ -1,13 +1,13 @@
 import type { Category, CategorySlug, Goal, TimeBlock, WeeklyTotal } from "./types";
 
 export const categories: Category[] = [
-  { id: "sleep", slug: "sleep", label: "수면", icon: "Moon", color: "#5b6ea8", tint: "#e8ebf5", stroke: "#3f5191", sortOrder: 10 },
-  { id: "meal", slug: "meal", label: "식사", icon: "Utensils", color: "#c4823f", tint: "#f7ecdc", stroke: "#9c6829", sortOrder: 20 },
-  { id: "move", slug: "move", label: "이동", icon: "Train", color: "#6c8f5d", tint: "#e6eee0", stroke: "#4f6f43", sortOrder: 30 },
-  { id: "work", slug: "work", label: "업무", icon: "Laptop", color: "#0f6cbd", tint: "#ebf3fc", stroke: "#0c3b5e", sortOrder: 40 },
-  { id: "exercise", slug: "exercise", label: "운동", icon: "Dumbbell", color: "#a85a5a", tint: "#f4e2e2", stroke: "#7a3e3e", sortOrder: 50 },
-  { id: "leisure", slug: "leisure", label: "여가", icon: "Gamepad2", color: "#8156a4", tint: "#efe6f5", stroke: "#5e3a7a", sortOrder: 60 },
-  { id: "other", slug: "other", label: "기타", icon: "Circle", color: "#707070", tint: "#f0f0f0", stroke: "#525252", sortOrder: 70 }
+  { id: "sleep", slug: "sleep", label: "수면", icon: "Moon", color: "#657895", tint: "#e9edf3", stroke: "#40536f", sortOrder: 10 },
+  { id: "meal", slug: "meal", label: "식사", icon: "Utensils", color: "#bc7a52", tint: "#f7ecdf", stroke: "#8f5739", sortOrder: 20 },
+  { id: "move", slug: "move", label: "이동", icon: "Train", color: "#72906a", tint: "#edf3e9", stroke: "#536f4a", sortOrder: 30 },
+  { id: "work", slug: "work", label: "업무", icon: "Laptop", color: "#4f7b68", tint: "#e5eee8", stroke: "#2f4f40", sortOrder: 40 },
+  { id: "exercise", slug: "exercise", label: "운동", icon: "Dumbbell", color: "#b76661", tint: "#f4e4e1", stroke: "#884844", sortOrder: 50 },
+  { id: "leisure", slug: "leisure", label: "여가", icon: "Gamepad2", color: "#806c9f", tint: "#eee8f5", stroke: "#5b4a78", sortOrder: 60 },
+  { id: "other", slug: "other", label: "기타", icon: "Circle", color: "#7a776f", tint: "#efebe2", stroke: "#5c584f", sortOrder: 70 }
 ];
 
 export const categoryById = Object.fromEntries(categories.map((c) => [c.id, c])) as Record<CategorySlug, Category>;

@@ -81,13 +81,13 @@ set search_path = public
 as $$
   insert into public.categories (user_id, slug, label, icon, color, tint, stroke, sort_order)
   values
-    (target_user, 'sleep', '수면', 'Moon', '#5b6ea8', '#e8ebf5', '#3f5191', 10),
-    (target_user, 'meal', '식사', 'Utensils', '#c4823f', '#f7ecdc', '#9c6829', 20),
-    (target_user, 'move', '이동', 'Train', '#6c8f5d', '#e6eee0', '#4f6f43', 30),
-    (target_user, 'work', '업무', 'Laptop', '#0f6cbd', '#ebf3fc', '#0c3b5e', 40),
-    (target_user, 'exercise', '운동', 'Dumbbell', '#a85a5a', '#f4e2e2', '#7a3e3e', 50),
-    (target_user, 'leisure', '여가', 'Gamepad2', '#8156a4', '#efe6f5', '#5e3a7a', 60),
-    (target_user, 'other', '기타', 'Circle', '#707070', '#f0f0f0', '#525252', 70)
+    (target_user, 'sleep', '수면', 'Moon', '#657895', '#e9edf3', '#40536f', 10),
+    (target_user, 'meal', '식사', 'Utensils', '#bc7a52', '#f7ecdf', '#8f5739', 20),
+    (target_user, 'move', '이동', 'Train', '#72906a', '#edf3e9', '#536f4a', 30),
+    (target_user, 'work', '업무', 'Laptop', '#4f7b68', '#e5eee8', '#2f4f40', 40),
+    (target_user, 'exercise', '운동', 'Dumbbell', '#b76661', '#f4e4e1', '#884844', 50),
+    (target_user, 'leisure', '여가', 'Gamepad2', '#806c9f', '#eee8f5', '#5b4a78', 60),
+    (target_user, 'other', '기타', 'Circle', '#7a776f', '#efebe2', '#5c584f', 70)
   on conflict (user_id, slug) do nothing;
 $$;
 
