@@ -24,6 +24,7 @@ create table public.time_blocks (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users on delete cascade,
   category_id uuid not null references public.categories on delete restrict,
+  title text,
   starts_at timestamptz not null,
   ends_at timestamptz not null,
   note text,

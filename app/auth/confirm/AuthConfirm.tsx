@@ -26,7 +26,7 @@ export function AuthConfirm() {
         return;
       }
 
-      router.replace("/today");
+      router.replace("/timeline");
       router.refresh();
     });
   }, [router, searchParams]);

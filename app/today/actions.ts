@@ -30,6 +30,7 @@ export async function addTimeBlock(input: AddTimeBlockInput) {
   const { error } = await supabase.from("time_blocks").insert({
     user_id: user.id,
     category_id: category.id,
+    title: input.title ?? null,
     starts_at: minuteToIso(input.date, input.start),
     ends_at: minuteToIso(input.date, input.end),
     note: input.note ?? null
@@ -39,8 +40,8 @@ export async function addTimeBlock(input: AddTimeBlockInput) {
     throw new Error(error.message);
   }
 
-  revalidatePath("/today");
-  revalidatePath(`/today/${input.date}`);
+  revalidatePath("/timeline");
+  revalidatePath(`/timeline/${input.date}`);
 }
 
 export async function updateTimeBlock(input: UpdateTimeBlockInput) {
@@ -69,6 +70,7 @@ export async function updateTimeBlock(input: UpdateTimeBlockInput) {
     .from("time_blocks")
     .update({
       category_id: category.id,
+      title: input.title ?? null,
       starts_at: minuteToIso(input.date, input.start),
       ends_at: minuteToIso(input.date, input.end),
       note: input.note ?? null
@@ -80,8 +82,8 @@ export async function updateTimeBlock(input: UpdateTimeBlockInput) {
     throw new Error(error.message);
   }
 
-  revalidatePath("/today");
-  revalidatePath(`/today/${input.date}`);
+  revalidatePath("/timeline");
+  revalidatePath(`/timeline/${input.date}`);
 }
 
 export async function deleteTimeBlock(input: DeleteTimeBlockInput) {
@@ -101,6 +103,6 @@ export async function deleteTimeBlock(input: DeleteTimeBlockInput) {
     throw new Error(error.message);
   }
 
-  revalidatePath("/today");
-  revalidatePath(`/today/${input.date}`);
+  revalidatePath("/timeline");
+  revalidatePath(`/timeline/${input.date}`);
 }
