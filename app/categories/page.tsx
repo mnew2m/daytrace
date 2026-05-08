@@ -1,5 +1,20 @@
 import { DailyLogApp } from "@/components/DailyLogApp";
+import { todayInKoreaPath } from "@/lib/date";
+import { getDayData } from "@/lib/queries/day-data";
+import { updateCategory, updateCategoryPalette, updateTimelineSettings } from "@/app/timeline/actions";
 
-export default function CategoriesPage() {
-  return <DailyLogApp view="categories" />;
+export default async function CategoriesPage() {
+  const data = await getDayData(todayInKoreaPath());
+
+  return (
+    <DailyLogApp
+      view="categories"
+      initialCategories={data.categories}
+      initialTimelineSettings={data.timelineSettings}
+      initialCategoryPaletteId={data.categoryPaletteId}
+      updateTimelineSettings={updateTimelineSettings}
+      updateCategory={updateCategory}
+      updateCategoryPalette={updateCategoryPalette}
+    />
+  );
 }

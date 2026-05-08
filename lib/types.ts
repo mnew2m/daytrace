@@ -12,6 +12,7 @@ export type Category = {
   slug: CategorySlug;
   label: string;
   icon: string;
+  emoji: string;
   color: string;
   tint: string;
   stroke: string;
@@ -21,6 +22,7 @@ export type Category = {
 export type TimeBlock = {
   id: string;
   cat: CategorySlug;
+  title: string;
   start: number;
   end: number;
   note: string;
@@ -29,6 +31,7 @@ export type TimeBlock = {
 export type AddTimeBlockInput = {
   date: string;
   cat: CategorySlug;
+  title?: string;
   start: number;
   end: number;
   note?: string;
@@ -43,6 +46,22 @@ export type DeleteTimeBlockInput = {
   date: string;
 };
 
+export type TimelineSettings = {
+  startHour: number;
+  endHour: number;
+};
+
+export type UpdateTimelineSettingsInput = TimelineSettings;
+
+export type UpdateCategoryInput = {
+  id: CategorySlug;
+  label?: string;
+  emoji?: string;
+  color?: string;
+  tint?: string;
+  stroke?: string;
+};
+
 export type Goal = {
   categoryId: CategorySlug;
   dailyMinutes: number;
@@ -52,3 +71,27 @@ export type WeeklyTotal = {
   date: string;
   label: string;
 } & Record<CategorySlug, number>;
+
+export type StatsHeatmapCell = {
+  cat: CategorySlug | null;
+  future?: boolean;
+};
+
+export type StatsHeatmapRow = {
+  date: string;
+  label: string;
+  isToday: boolean;
+  hours: StatsHeatmapCell[];
+};
+
+export type StatsKpi = {
+  title: string;
+  value: string;
+  sub: string;
+};
+
+export type StatsInsight = {
+  tone: "warning" | "success" | "info";
+  title: string;
+  body: string;
+};

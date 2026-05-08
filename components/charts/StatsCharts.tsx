@@ -1,23 +1,7 @@
-import { categories, categoryById, fmtDuration, fmtDurationShort, nowMinutes, weeklyTotals } from "@/lib/data";
-import type { CategorySlug } from "@/lib/types";
+import { fmtDuration, fmtDurationShort } from "@/lib/data";
+import type { Category, CategorySlug, StatsHeatmapRow, WeeklyTotal } from "@/lib/types";
 
-export function Heatmap() {
-  const rows = ["월", "화", "수", "목", "금", "토", "오늘"].map((label, dayIndex) => {
-    const isToday = dayIndex === 6;
-    const isWeekend = dayIndex === 5;
-    const hours = Array.from({ length: 24 }, (_, hour): CategorySlug | null => {
-      if (isToday && hour * 60 > nowMinutes) return null;
-      if (hour < 7) return "sleep";
-      if (hour === 7 || hour === 12 || hour === 20) return "meal";
-      if (hour === 8 || hour === 18) return isWeekend ? "leisure" : "move";
-      if ((hour >= 9 && hour < 12) || (hour >= 13 && hour < 18)) return isWeekend ? "leisure" : "work";
-      if (hour === 19) return dayIndex % 2 === 1 ? "exercise" : "meal";
-      if (hour >= 21 && hour < 23) return "leisure";
-      return "sleep";
-    });
-    return { label, hours, isToday };
-  });
-
+export function Heatmap({ rows, categoryById }: { rows: StatsHeatmapRow[]; categoryById: Record<CategorySlug, Category> }) {
   return (
     <div className="heatmap">
       <div className="heatmap-row heatmap-head">
@@ -27,14 +11,14 @@ export function Heatmap() {
         ))}
       </div>
       {rows.map((row) => (
-        <div className="heatmap-row" key={row.label}>
+        <div className="heatmap-row" key={row.date}>
           <strong className={row.isToday ? "today" : ""}>{row.label}</strong>
-          {row.hours.map((cat, hour) => (
+          {row.hours.map((cell, hour) => (
             <span
               key={hour}
-              className={cat ? "" : "future"}
-              title={cat ? `${row.label} ${hour}시 · ${categoryById[cat].label}` : "미래 시간"}
-              style={cat ? { background: categoryById[cat].color } : undefined}
+              className={cell.future ? "future" : cell.cat ? "" : "empty"}
+              title={cell.cat ? `${row.label} ${hour}시 · ${categoryById[cell.cat].label}` : cell.future ? "미래 시간" : "기록 없음"}
+              style={cell.cat ? { background: categoryById[cell.cat].color } : undefined}
             />
           ))}
         </div>
@@ -43,7 +27,7 @@ export function Heatmap() {
   );
 }
 
-export function WeeklyStacked() {
+export function WeeklyStacked({ categories, weeklyTotals }: { categories: Category[]; weeklyTotals: WeeklyTotal[] }) {
   return (
     <div className="weekly-bars">
       {weeklyTotals.map((day, index) => {
@@ -52,10 +36,10 @@ export function WeeklyStacked() {
         return (
           <div className="weekly-day" key={day.date}>
             <span className="bar-total">{fmtDurationShort(total)}</span>
-            <div className={`stacked-bar ${isToday ? "today" : ""}`} style={{ height: `${(total / 1440) * 100}%` }}>
+            <div className={`stacked-bar ${isToday ? "today" : ""}`} style={{ height: `${total > 0 ? (total / 1440) * 100 : 8}%` }}>
               {categories.map((category) => {
                 const value = day[category.id];
-                if (!value) return null;
+                if (!value || total === 0) return null;
                 return (
                   <i
                     key={category.id}

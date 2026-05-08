@@ -3,42 +3,67 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { AppShell } from "./AppShell";
 import { AccountSettings } from "./AccountSettings";
-import { Badge, Button, Card, CategoryIcon, TextInput } from "./ui";
+import { Badge, Button, Card, TextInput } from "./ui";
 import { MiniDayBar } from "./charts/MiniDayBar";
 import { Heatmap, WeeklyStacked } from "./charts/StatsCharts";
 import { DayView } from "./timeline/DayView";
+import { useCategoryPalette } from "./useCategoryPalette";
 import { useNowMinutes } from "./useNowMinutes";
-import { defaultTimelineSettings, useTimelineSettings } from "./useTimelineSettings";
-import { categories, categoryById, fmtDuration, fmtDurationShort, fmtTime, goals as defaultGoals, todayBlocks, totalsBy } from "@/lib/data";
-import type { AddTimeBlockInput, DeleteTimeBlockInput, UpdateTimeBlockInput, CategorySlug, Goal, TimeBlock } from "@/lib/types";
+import { useTimelineSettings } from "./useTimelineSettings";
+import { categories as defaultCategories, fmtDuration, fmtDurationShort, fmtTime, goals as defaultGoals, totalsBy } from "@/lib/data";
+import { defaultTimelineSettings } from "@/lib/settings";
+import type { CategoryPalette, CategoryPaletteId } from "@/lib/category-palettes";
+import type { StatsData } from "@/lib/queries/stats-data";
+import type { AddTimeBlockInput, DeleteTimeBlockInput, UpdateCategoryInput, UpdateTimeBlockInput, UpdateTimelineSettingsInput, Category, CategorySlug, Goal, TimeBlock, TimelineSettings } from "@/lib/types";
+
+const defaultBlocks: TimeBlock[] = [];
 
 export function DailyLogApp({
   view = "today",
   date = "2026-05-06",
-  initialBlocks = todayBlocks,
+  initialBlocks = defaultBlocks,
   initialGoals = defaultGoals,
-  isPreview = true,
+  initialCategories = defaultCategories,
+  initialTimelineSettings = defaultTimelineSettings,
+  initialCategoryPaletteId = "default",
+  initialStats,
   saveBlock,
   updateBlock,
-  deleteBlock
+  deleteBlock,
+  updateTimelineSettings,
+  updateCategory,
+  updateCategoryPalette
 }: {
   view?: "today" | "stats" | "categories" | "settings";
   date?: string;
   initialBlocks?: TimeBlock[];
   initialGoals?: Goal[];
-  isPreview?: boolean;
+  initialCategories?: Category[];
+  initialTimelineSettings?: TimelineSettings;
+  initialCategoryPaletteId?: string;
+  initialStats?: StatsData;
   saveBlock?: (input: AddTimeBlockInput) => Promise<void>;
   updateBlock?: (input: UpdateTimeBlockInput) => Promise<void>;
   deleteBlock?: (input: DeleteTimeBlockInput) => Promise<void>;
+  updateTimelineSettings?: (input: UpdateTimelineSettingsInput) => Promise<void>;
+  updateCategory?: (input: UpdateCategoryInput) => Promise<void>;
+  updateCategoryPalette?: (paletteId: CategoryPaletteId, categories: UpdateCategoryInput[]) => Promise<void>;
 }) {
   const [blocks, setBlocks] = useState<TimeBlock[]>(initialBlocks);
   const nowMinutes = useNowMinutes();
-  const [timelineSettings, setTimelineSettings] = useTimelineSettings();
+  const categoryPalette = useCategoryPalette({
+    initialCategories,
+    initialPaletteId: initialCategoryPaletteId,
+    saveCategory: updateCategory,
+    savePalette: updateCategoryPalette
+  });
+  const [timelineSettings, setTimelineSettings] = useTimelineSettings(initialTimelineSettings, updateTimelineSettings);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ start: number; end: number } | null>(null);
   const [draftCat, setDraftCat] = useState<CategorySlug>("work");
+  const [draftTitle, setDraftTitle] = useState("");
   const [draftNote, setDraftNote] = useState("");
-  const [message, setMessage] = useState<string | null>(isPreview ? "Preview mode: 로그인 전에는 시안 데이터로 동작합니다." : null);
+  const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const totals = useMemo(() => totalsBy(blocks), [blocks]);
 
@@ -46,24 +71,26 @@ export function DailyLogApp({
     setBlocks(initialBlocks);
     setSelectedId(null);
     setDraft(null);
+    setDraftTitle("");
     setDraftNote("");
   }, [date, initialBlocks]);
 
   function addDraft() {
     if (!draft) return;
-    const nextBlock = { id: `b${Date.now()}`, cat: draftCat, start: draft.start, end: draft.end, note: draftNote };
+    const nextBlock = { id: `b${Date.now()}`, cat: draftCat, title: draftTitle, start: draft.start, end: draft.end, note: draftNote };
     setBlocks((current) => [...current, nextBlock]);
     setDraft(null);
+    setDraftTitle("");
     setDraftNote("");
 
-    if (!saveBlock || isPreview) {
-      setMessage("Preview mode에서는 화면에만 추가됩니다. OAuth 로그인 연결 후 DB에 저장됩니다.");
+    if (!saveBlock) {
+      setMessage("저장 기능을 사용할 수 없습니다. 다시 로그인해 주세요.");
       return;
     }
 
     startTransition(async () => {
       try {
-        await saveBlock({ date, cat: nextBlock.cat, start: nextBlock.start, end: nextBlock.end, note: nextBlock.note });
+        await saveBlock({ date, cat: nextBlock.cat, title: nextBlock.title, start: nextBlock.start, end: nextBlock.end, note: nextBlock.note });
         setMessage("저장했습니다.");
       } catch (error) {
         setMessage(error instanceof Error ? error.message : "저장에 실패했습니다.");
@@ -79,17 +106,17 @@ export function DailyLogApp({
     }
 
     const previousBlocks = blocks;
-    const nextBlock: TimeBlock = { id: `b${Date.now()}`, cat: "sleep", start, end, note: "" };
+    const nextBlock: TimeBlock = { id: `b${Date.now()}`, cat: "sleep", title: "", start, end, note: "" };
     setBlocks((current) => [nextBlock, ...current]);
 
-    if (!saveBlock || isPreview) {
-      setMessage("Preview mode에서는 화면에서만 수면 기록이 추가됩니다. OAuth 로그인 연결 후 DB에 저장됩니다.");
+    if (!saveBlock) {
+      setMessage("저장 기능을 사용할 수 없습니다. 다시 로그인해 주세요.");
       return;
     }
 
     startTransition(async () => {
       try {
-        await saveBlock({ date, cat: nextBlock.cat, start: nextBlock.start, end: nextBlock.end, note: nextBlock.note });
+        await saveBlock({ date, cat: nextBlock.cat, title: nextBlock.title, start: nextBlock.start, end: nextBlock.end, note: nextBlock.note });
         setMessage("수면 기록을 저장했습니다.");
       } catch (error) {
         setBlocks(previousBlocks);
@@ -102,14 +129,14 @@ export function DailyLogApp({
     const previousBlocks = blocks;
     setBlocks((current) => current.map((block) => (block.id === nextBlock.id ? nextBlock : block)));
 
-    if (!updateBlock || isPreview) {
-      setMessage("Preview mode에서는 화면에서만 수정됩니다. OAuth 로그인 연결 후 DB에 저장됩니다.");
+    if (!updateBlock) {
+      setMessage("수정 기능을 사용할 수 없습니다. 다시 로그인해 주세요.");
       return;
     }
 
     startTransition(async () => {
       try {
-        await updateBlock({ date, id: nextBlock.id, cat: nextBlock.cat, start: nextBlock.start, end: nextBlock.end, note: nextBlock.note });
+        await updateBlock({ date, id: nextBlock.id, cat: nextBlock.cat, title: nextBlock.title, start: nextBlock.start, end: nextBlock.end, note: nextBlock.note });
         setMessage("수정했습니다.");
       } catch (error) {
         setBlocks(previousBlocks);
@@ -123,8 +150,8 @@ export function DailyLogApp({
     setBlocks((current) => current.filter((block) => block.id !== id));
     setSelectedId(null);
 
-    if (!deleteBlock || isPreview) {
-      setMessage("Preview mode에서는 화면에서만 삭제됩니다. OAuth 로그인 연결 후 DB에 저장됩니다.");
+    if (!deleteBlock) {
+      setMessage("삭제 기능을 사용할 수 없습니다. 다시 로그인해 주세요.");
       return;
     }
 
@@ -143,6 +170,8 @@ export function DailyLogApp({
     <AppShell>
       {view === "today" ? (
         <TodayView
+          categories={categoryPalette.categories}
+          categoryMap={categoryPalette.categoryById}
           blocks={blocks}
           goals={initialGoals}
           totals={totals}
@@ -152,6 +181,8 @@ export function DailyLogApp({
           setDraft={setDraft}
           draftCat={draftCat}
           setDraftCat={setDraftCat}
+          draftTitle={draftTitle}
+          setDraftTitle={setDraftTitle}
           draftNote={draftNote}
           setDraftNote={setDraftNote}
           addDraft={addDraft}
@@ -164,14 +195,25 @@ export function DailyLogApp({
           timelineSettings={timelineSettings}
         />
       ) : null}
-      {view === "stats" ? <StatsView /> : null}
-      {view === "categories" ? <CategoriesView /> : null}
+      {view === "stats" && initialStats ? <StatsView stats={initialStats} /> : null}
+      {view === "categories" ? (
+        <CategoriesView
+          paletteId={categoryPalette.paletteId}
+          palettes={categoryPalette.palettes}
+          setPaletteId={categoryPalette.setPaletteId}
+          categories={categoryPalette.categories}
+          updateCategoryItem={categoryPalette.updateCategoryItem}
+          updateCategoryColor={categoryPalette.updateCategoryColor}
+        />
+      ) : null}
       {view === "settings" ? <SettingsView timelineSettings={timelineSettings} setTimelineSettings={setTimelineSettings} /> : null}
     </AppShell>
   );
 }
 
 function TodayView(props: {
+  categories: Category[];
+  categoryMap: Record<CategorySlug, Category>;
   blocks: TimeBlock[];
   goals: Goal[];
   totals: Record<CategorySlug, number>;
@@ -181,6 +223,8 @@ function TodayView(props: {
   setDraft: (draft: { start: number; end: number } | null) => void;
   draftCat: CategorySlug;
   setDraftCat: (cat: CategorySlug) => void;
+  draftTitle: string;
+  setDraftTitle: (title: string) => void;
   draftNote: string;
   setDraftNote: (note: string) => void;
   addDraft: () => void;
@@ -207,14 +251,14 @@ function TodayView(props: {
         <div className="kpi-grid">
           <Card className="mini-card">
             <div className="card-head">
-              <span>오늘 한눈에 보기</span>
+              <span>하루 요약</span>
               <small>{fmtTime(props.nowMinutes)} 기준</small>
             </div>
-            <MiniDayBar blocks={props.blocks} nowMinutes={props.nowMinutes} />
+            <MiniDayBar blocks={props.blocks} nowMinutes={props.nowMinutes} categoryById={props.categoryMap} />
           </Card>
           <Kpi title="기록한 시간" value={fmtDurationShort(totalLogged)} sub={`${props.blocks.length}개 블록`} />
-          <Kpi title="가장 많이" value={categoryById[topCategory[0]].label} sub={fmtDurationShort(topCategory[1])} />
-          <Kpi title="현재 진행 중" value={activeBlock ? categoryById[activeBlock.cat].label : "-"} sub={activeBlock ? `${fmtTime(activeBlock.start)} 시작` : "없음"} />
+          <Kpi title="가장 많이" value={props.categoryMap[topCategory[0]].label} sub={fmtDurationShort(topCategory[1])} />
+          <Kpi title="현재 진행 중" value={activeBlock ? props.categoryMap[activeBlock.cat].label : "-"} sub={activeBlock ? `${fmtTime(activeBlock.start)} 시작` : "없음"} />
         </div>
 
         <SleepEditor block={sleepBlock} isPending={props.isPending} onSave={props.onSaveSleep} />
@@ -226,7 +270,7 @@ function TodayView(props: {
               <Badge>{fmtDuration(totalLogged)} 기록됨</Badge>
             </div>
             <div className="legend">
-              {categories.filter((category) => category.id !== "sleep").slice(0, 6).map((category) => (
+              {props.categories.filter((category) => category.id !== "sleep").slice(0, 6).map((category) => (
                 <span key={category.id}>
                   <i style={{ background: category.color }} />
                   {category.label}
@@ -241,6 +285,7 @@ function TodayView(props: {
               nowMinutes={props.nowMinutes}
               startHour={props.timelineSettings.startHour}
               endHour={props.timelineSettings.endHour}
+              categoryById={props.categoryMap}
               selectedId={props.selectedId}
               onSelect={(id) => props.setSelectedId(id === props.selectedId ? null : id)}
               onDraft={props.setDraft}
@@ -260,14 +305,14 @@ function TodayView(props: {
             {props.draft ? <button onClick={() => props.setDraft(null)}>취소</button> : null}
           </div>
           <div className="category-picker">
-            {categories.filter((category) => category.id !== "sleep").slice(0, 6).map((category) => (
+            {props.categories.filter((category) => category.id !== "sleep").slice(0, 6).map((category) => (
               <button
                 key={category.id}
                 className={props.draftCat === category.id ? "active" : ""}
                 onClick={() => props.setDraftCat(category.id)}
                 style={{ "--cat": category.color, "--cat-tint": category.tint } as React.CSSProperties}
               >
-                <CategoryIcon name={category.icon} size={14} />
+                <span className="category-emoji">{category.emoji}</span>
                 {category.label}
               </button>
             ))}
@@ -276,13 +321,14 @@ function TodayView(props: {
             <TimeField label="시작" value={props.draft ? fmtTime(props.draft.start) : fmtTime(props.nowMinutes)} />
             <TimeField label="종료" value={props.draft ? fmtTime(props.draft.end) : "지금"} />
           </div>
-          <TextInput placeholder="메모 (선택)" value={props.draftNote} onChange={(event) => props.setDraftNote(event.target.value)} />
+          <TextInput placeholder="제목" value={props.draftTitle} onChange={(event) => props.setDraftTitle(event.target.value)} />
+          <TextInput placeholder="내용 (선택)" value={props.draftNote} onChange={(event) => props.setDraftNote(event.target.value)} />
           <Button appearance="primary" onClick={props.addDraft} disabled={props.isPending}>{props.draft ? "저장" : "지금부터 시작"}</Button>
           {props.message ? <p className="panel-message">{props.message}</p> : null}
         </section>
 
         {selected ? (
-          <SelectedBlockPanel block={selected} isPending={props.isPending} onSave={props.onEditBlock} onDelete={props.onDeleteBlock} />
+          <SelectedBlockPanel categories={props.categories} categoryMap={props.categoryMap} block={selected} isPending={props.isPending} onSave={props.onEditBlock} onDelete={props.onDeleteBlock} />
         ) : null}
 
         <section className="rail-section">
@@ -291,7 +337,7 @@ function TodayView(props: {
             <button>편집</button>
           </div>
           {props.goals.map((goal) => {
-            const category = categoryById[goal.categoryId];
+            const category = props.categoryMap[goal.categoryId];
             const value = props.totals[goal.categoryId];
             const done = value >= goal.dailyMinutes;
             return (
@@ -313,7 +359,7 @@ function TodayView(props: {
 
         <section className="rail-section">
           <strong>카테고리 합계</strong>
-          {categories.filter((category) => props.totals[category.id] > 0).map((category) => (
+          {props.categories.filter((category) => props.totals[category.id] > 0).map((category) => (
             <div className="total-row" key={category.id}>
               <i style={{ background: category.color }} />
               <span>{category.label}</span>
@@ -397,12 +443,12 @@ function CompactTimeInput({ value, onChange, ariaLabel }: { value: string; onCha
   const minute = parsed === null ? "" : String(parsed % 60).padStart(2, "0");
 
   function update(nextHour: string, nextMinute: string) {
-    if (!nextHour || !nextMinute) {
+    if (!nextHour && !nextMinute) {
       onChange("");
       return;
     }
 
-    onChange(`${nextHour}:${nextMinute}`);
+    onChange(`${nextHour || "00"}:${nextMinute || "00"}`);
   }
 
   return (
@@ -433,17 +479,22 @@ function normalizeDayMinute(minutes: number) {
 }
 
 function SelectedBlockPanel({
+  categories,
+  categoryMap,
   block,
   isPending,
   onSave,
   onDelete
 }: {
+  categories: Category[];
+  categoryMap: Record<CategorySlug, Category>;
   block: TimeBlock;
   isPending: boolean;
   onSave: (block: TimeBlock) => void;
   onDelete: (id: string) => void;
 }) {
   const [cat, setCat] = useState<CategorySlug>(block.cat);
+  const [title, setTitle] = useState(block.title);
   const [start, setStart] = useState(fmtTime(block.start));
   const [end, setEnd] = useState(fmtTime(block.end));
   const [note, setNote] = useState(block.note);
@@ -451,6 +502,7 @@ function SelectedBlockPanel({
 
   useEffect(() => {
     setCat(block.cat);
+    setTitle(block.title);
     setStart(fmtTime(block.start));
     setEnd(fmtTime(block.end));
     setNote(block.note);
@@ -472,10 +524,10 @@ function SelectedBlockPanel({
     }
 
     setError(null);
-    onSave({ ...block, cat, start: startMinutes, end: endMinutes, note });
+    onSave({ ...block, cat, title, start: startMinutes, end: endMinutes, note });
   }
 
-  const category = categoryById[cat];
+  const category = categoryMap[cat];
   const parsedStart = parseTimeInput(start) ?? block.start;
   const parsedEnd = parseTimeInput(end) ?? block.end;
 
@@ -483,7 +535,7 @@ function SelectedBlockPanel({
     <section className="selected-panel" style={{ background: category.tint, borderColor: category.color }}>
       <div className="selected-panel-head">
         <small>선택됨</small>
-        <strong>{category.label}</strong>
+        <strong>{category.emoji} {title || category.label}</strong>
       </div>
       <div className="selected-category-picker">
         {categories.filter((categoryItem) => categoryItem.id !== "sleep").map((categoryItem) => (
@@ -494,7 +546,7 @@ function SelectedBlockPanel({
             onClick={() => setCat(categoryItem.id)}
             style={{ "--cat": categoryItem.color, "--cat-tint": categoryItem.tint } as React.CSSProperties}
           >
-            <CategoryIcon name={categoryItem.icon} size={14} />
+            <span className="category-emoji">{categoryItem.emoji}</span>
             {categoryItem.label}
           </button>
         ))}
@@ -503,7 +555,8 @@ function SelectedBlockPanel({
         <TextInput aria-label="시작 시간" type="time" value={start} onChange={(event) => setStart(event.target.value)} />
         <TextInput aria-label="종료 시간" type="time" value={end} onChange={(event) => setEnd(event.target.value)} />
       </div>
-      <TextInput aria-label="메모" placeholder="메모" value={note} onChange={(event) => setNote(event.target.value)} />
+      <TextInput aria-label="제목" placeholder="제목" value={title} onChange={(event) => setTitle(event.target.value)} />
+      <TextInput aria-label="내용" placeholder="내용" value={note} onChange={(event) => setNote(event.target.value)} />
       <span className="selected-duration">{fmtDuration(Math.max(0, parsedEnd - parsedStart))}</span>
       {error ? <p className="panel-message">{error}</p> : null}
       <div className="selected-actions">
@@ -542,13 +595,18 @@ function TimeField({ label, value }: { label: string; value: string }) {
   );
 }
 
-function StatsView() {
+function StatsView({ stats }: { stats: StatsData }) {
+  const categoryById = useMemo(
+    () => Object.fromEntries(stats.categories.map((category) => [category.id, category])) as Record<CategorySlug, Category>,
+    [stats.categories]
+  );
+
   return (
     <div className="page-pad">
       <div className="page-title">
         <div>
           <h1>지난 7일 통계</h1>
-          <p>4월 30일 - 5월 6일 · 패턴과 추이 분석</p>
+          <p>{stats.rangeLabel}</p>
         </div>
         <div className="segmented">
           <button className="active">이번 주</button>
@@ -557,28 +615,27 @@ function StatsView() {
         </div>
       </div>
       <div className="kpi-grid stats-kpis">
-        <Kpi title="평균 수면" value="7h 12m" sub="목표 8h · -48m" />
-        <Kpi title="평균 업무" value="7h 30m" sub="딥워크 10-12시" />
-        <Kpi title="운동" value="주 3회" sub="화·목·토 저녁" />
-        <Kpi title="여가" value="2h" sub="저녁 9-11시" />
+        {stats.kpis.map((kpi) => (
+          <Kpi key={kpi.title} title={kpi.title} value={kpi.value} sub={kpi.sub} />
+        ))}
       </div>
       <Card className="chart-card">
         <div className="card-head">
           <strong>요일 × 시간 패턴</strong>
           <small>각 칸 = 1시간 · 색 = 주 활동</small>
         </div>
-        <Heatmap />
+        <Heatmap rows={stats.heatmapRows} categoryById={categoryById} />
       </Card>
       <div className="stats-bottom">
         <Card className="chart-card">
           <strong>일별 합계</strong>
-          <WeeklyStacked />
+          <WeeklyStacked categories={stats.categories} weeklyTotals={stats.weeklyTotals} />
         </Card>
         <Card className="chart-card">
           <strong>인사이트</strong>
-          <Insight tone="warning" title="수요일 수면 부족" body="이번 주 수요일은 목표보다 1시간 30분 적습니다." />
-          <Insight tone="success" title="운동 패턴 안정적" body="화·목·토 저녁 운동 흐름이 유지되고 있습니다." />
-          <Insight tone="info" title="딥워크 시간대" body="오전 10-12시에 업무 시간이 가장 안정적입니다." />
+          {stats.insights.map((insight) => (
+            <Insight key={insight.title} tone={insight.tone} title={insight.title} body={insight.body} />
+          ))}
         </Card>
       </div>
     </div>
@@ -594,7 +651,23 @@ function Insight({ tone, title, body }: { tone: string; title: string; body: str
   );
 }
 
-function CategoriesView() {
+function CategoriesView({
+  paletteId,
+  palettes,
+  categories: categoryList,
+  setPaletteId,
+  updateCategoryItem,
+  updateCategoryColor
+}: {
+  paletteId: CategoryPaletteId;
+  palettes: CategoryPalette[];
+  categories: Category[];
+  setPaletteId: (paletteId: CategoryPaletteId) => void;
+  updateCategoryItem: (categoryId: CategorySlug, nextItem: { label: string; emoji: string }) => void;
+  updateCategoryColor: (categoryId: CategorySlug, color: string) => void;
+}) {
+  const selectedPalette = palettes.find((palette) => palette.id === paletteId) ?? palettes[0];
+
   return (
     <div className="page-pad">
       <div className="page-title">
@@ -603,17 +676,65 @@ function CategoriesView() {
           <p>기본 7개 카테고리와 색상 토큰</p>
         </div>
       </div>
+      <Card className="palette-card">
+        <div className="card-head">
+          <strong>2026 Pantone 톤</strong>
+          <small>{palettes.find((palette) => palette.id === paletteId)?.source}</small>
+        </div>
+        <div className="palette-list">
+          {palettes.map((palette) => (
+            <button
+              key={palette.id}
+              type="button"
+              className={palette.id === paletteId ? "active" : ""}
+              onClick={() => setPaletteId(palette.id)}
+            >
+              <span>{palette.label}</span>
+              <i>
+                {palette.colors.map((color) => (
+                  <b key={color} style={{ background: color }} />
+                ))}
+              </i>
+            </button>
+          ))}
+        </div>
+      </Card>
       <div className="category-grid">
-        {categories.map((category) => (
+        {categoryList.map((category) => (
           <Card className="category-card" key={category.id}>
             <div>
               <span style={{ background: category.tint, color: category.stroke }}>
-                <CategoryIcon name={category.icon} />
+                {category.emoji}
               </span>
               <div>
                 <strong>{category.label}</strong>
                 <small>{category.color}</small>
               </div>
+            </div>
+            <div className="category-edit-row">
+              <TextInput
+                aria-label={`${category.label} 아이콘`}
+                disabled={category.id === "sleep"}
+                value={category.emoji}
+                onChange={(event) => updateCategoryItem(category.id, { label: category.label, emoji: event.target.value })}
+              />
+              <TextInput
+                aria-label={`${category.label} 이름`}
+                disabled={category.id === "sleep"}
+                value={category.label}
+                onChange={(event) => updateCategoryItem(category.id, { label: event.target.value, emoji: category.emoji })}
+              />
+            </div>
+            <div className="category-color-picker" aria-label={`${category.label} 색상`}>
+              {selectedPalette.colors.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  className={category.color.toLowerCase() === color.toLowerCase() ? "active" : ""}
+                  style={{ background: color }}
+                  onClick={() => updateCategoryColor(category.id, color)}
+                />
+              ))}
             </div>
             <i style={{ background: category.color }} />
           </Card>

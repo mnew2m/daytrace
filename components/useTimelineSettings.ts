@@ -1,18 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { defaultTimelineSettings } from "@/lib/settings";
+import type { TimelineSettings, UpdateTimelineSettingsInput } from "@/lib/types";
 
 const storageKey = "daytrace.timelineSettings";
-
-export type TimelineSettings = {
-  startHour: number;
-  endHour: number;
-};
-
-export const defaultTimelineSettings: TimelineSettings = {
-  startHour: 5,
-  endHour: 24
-};
 
 function readSettings(): TimelineSettings {
   if (typeof window === "undefined") return defaultTimelineSettings;
@@ -34,15 +26,20 @@ function readSettings(): TimelineSettings {
   }
 }
 
-export function useTimelineSettings() {
-  const [settings, setSettingsState] = useState<TimelineSettings>(defaultTimelineSettings);
+export function useTimelineSettings(initialSettings = defaultTimelineSettings, saveSettings?: (input: UpdateTimelineSettingsInput) => Promise<void>) {
+  const [settings, setSettingsState] = useState<TimelineSettings>(initialSettings);
 
   useEffect(() => {
-    setSettingsState(readSettings());
-  }, []);
+    setSettingsState(initialSettings);
+  }, [initialSettings]);
 
   function setSettings(next: TimelineSettings) {
     setSettingsState(next);
+    if (saveSettings) {
+      void saveSettings(next);
+      return;
+    }
+
     window.localStorage.setItem(storageKey, JSON.stringify(next));
   }
 

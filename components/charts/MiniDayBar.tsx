@@ -1,7 +1,15 @@
-import { categoryById, fmtTime } from "@/lib/data";
-import type { TimeBlock } from "@/lib/types";
+import { categoryById as defaultCategoryById, fmtTime } from "@/lib/data";
+import type { Category, CategorySlug, TimeBlock } from "@/lib/types";
 
-export function MiniDayBar({ blocks, nowMinutes }: { blocks: TimeBlock[]; nowMinutes: number }) {
+export function MiniDayBar({
+  blocks,
+  nowMinutes,
+  categoryById = defaultCategoryById
+}: {
+  blocks: TimeBlock[];
+  nowMinutes: number;
+  categoryById?: Record<CategorySlug, Category>;
+}) {
   return (
     <div className="mini-day">
       <div className="mini-track">
@@ -10,7 +18,7 @@ export function MiniDayBar({ blocks, nowMinutes }: { blocks: TimeBlock[]; nowMin
           return (
             <span
               key={block.id}
-              title={`${category.label} ${fmtTime(block.start)}-${fmtTime(block.end)}`}
+              title={`${category.emoji} ${block.title || category.label} ${fmtTime(block.start)}-${fmtTime(block.end)}`}
               style={{ width: `${((block.end - block.start) / 1440) * 100}%`, background: category.color }}
             />
           );

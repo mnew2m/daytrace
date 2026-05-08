@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Card } from "@/components/ui";
 import { createClient } from "@/lib/supabase/browser";
 
 export function LoginPanel({ message }: { message?: string }) {
@@ -30,17 +29,18 @@ export function LoginPanel({ message }: { message?: string }) {
   }
 
   return (
-    <Card className="login-card">
+    <section className="login-card">
       <div className="brand login-brand">
         <span className="brand-mark">D</span>
         <span>Daytrace</span>
       </div>
-      <h1>로그인</h1>
-      <p>Google 계정으로 Daytrace에 로그인합니다.</p>
-      <Button appearance="primary" type="button" onClick={signInWithGoogle} disabled={isLoading}>
+      <h1>Daytrace</h1>
+      <p>로그인 후 타임라인을 기록하세요.</p>
+      <button className="google-login-button" type="button" onClick={signInWithGoogle} disabled={isLoading}>
+        <span>G</span>
         {isLoading ? "Google로 이동 중" : "Google로 계속하기"}
-      </Button>
+      </button>
       {error ? <p className="login-message">{error}</p> : null}
-    </Card>
+    </section>
   );
 }

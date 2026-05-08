@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { categoryById, fmtDurationShort, fmtTime } from "@/lib/data";
-import type { TimeBlock } from "@/lib/types";
+import { categoryById as defaultCategoryById, fmtDurationShort, fmtTime } from "@/lib/data";
+import type { Category, CategorySlug, TimeBlock } from "@/lib/types";
 
 const hourPx = 34;
 
@@ -12,6 +12,7 @@ export function DayView({
   nowMinutes,
   startHour,
   endHour,
+  categoryById = defaultCategoryById,
   selectedId,
   onSelect,
   onDraft,
@@ -22,6 +23,7 @@ export function DayView({
   nowMinutes: number;
   startHour: number;
   endHour: number;
+  categoryById?: Record<CategorySlug, Category>;
   selectedId?: string | null;
   onSelect?: (id: string) => void;
   onDraft?: (draft: { start: number; end: number }) => void;
@@ -149,11 +151,13 @@ export function DayView({
             className="sleep-band"
             style={{
               top: ((visibleSleep.visibleStart - startHour * 60) / 60) * hourPx,
-              height: Math.max(((visibleSleep.visibleEnd - visibleSleep.visibleStart) / 60) * hourPx, 24)
+              height: Math.max(((visibleSleep.visibleEnd - visibleSleep.visibleStart) / 60) * hourPx, 24),
+              background: categoryById.sleep.tint,
+              borderLeftColor: categoryById.sleep.color
             }}
           >
             <span>
-              <strong style={{ color: categoryById.sleep.stroke }}>{categoryById.sleep.label}</strong>
+              <strong style={{ color: categoryById.sleep.stroke }}>{categoryById.sleep.emoji} {categoryById.sleep.label}</strong>
               <em>
                 {sleepLabel(visibleSleep.start)}-{sleepLabel(visibleSleep.end)} · {fmtDurationShort(visibleSleep.end - visibleSleep.start)}
               </em>
@@ -203,7 +207,7 @@ export function DayView({
               }}
             >
               <span>
-                <strong style={{ color: category.stroke }}>{category.label}</strong>
+                <strong style={{ color: category.stroke }}>{category.emoji} {block.title || category.label}</strong>
                 <em>
                   {fmtTime(nextTime.start)}-{fmtTime(nextTime.end)} · {fmtDurationShort(nextTime.end - nextTime.start)}
                 </em>
