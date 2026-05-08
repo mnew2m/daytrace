@@ -38,20 +38,142 @@
 
 .date-switcher {
   align-items: center;
-  background: rgba(255, 253, 248, 0.74);
-  border: 1px solid var(--stroke-2);
-  border-radius: 999px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
   display: flex;
-  gap: 8px;
+  gap: 12px;
   margin: 0 auto;
-  padding: 4px 8px;
+  padding: 0;
+}
+
+.topbar-center {
+  align-items: center;
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: center;
+  min-width: 0;
 }
 
 .date-label {
   align-items: center;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: row;
+  font-size: 15px;
+  font-weight: 900;
+  gap: 8px;
+  min-height: 38px;
+  min-width: 214px;
+  justify-content: center;
+  padding: 0 6px;
+  text-decoration: none;
+}
+
+.date-picker-wrap {
+  position: relative;
+}
+
+.date-popover {
+  background: var(--bg-surface);
+  border: 1px solid var(--stroke-2);
+  border-radius: 14px;
+  box-shadow: var(--shadow-8);
   display: flex;
   flex-direction: column;
-  min-width: 190px;
+  gap: 10px;
+  left: 50%;
+  min-width: 224px;
+  padding: 12px;
+  position: absolute;
+  top: 46px;
+  transform: translateX(-50%);
+  z-index: 30;
+}
+
+.mini-calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mini-calendar-head {
+  align-items: center;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 30px 1fr 30px;
+}
+
+.mini-calendar-head strong {
+  font-size: 14px;
+}
+
+.mini-calendar-head button,
+.mini-calendar-grid button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--fg-1);
+  cursor: pointer;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.mini-calendar-head button {
+  border-radius: 8px;
+  height: 30px;
+  width: 30px;
+}
+
+.mini-calendar-head button:hover,
+.mini-calendar-grid button:hover {
+  background: var(--bg-subtle);
+}
+
+.mini-calendar-weekdays,
+.mini-calendar-grid {
+  display: grid;
+  gap: 2px;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.mini-calendar-weekdays span {
+  color: var(--fg-4);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.mini-calendar-grid button,
+.mini-calendar-grid span {
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  height: 28px;
+}
+
+.mini-calendar-grid button.selected {
+  background: var(--color-brand-100);
+  color: white;
+}
+
+.date-label:hover,
+.date-label:hover strong {
+  color: var(--color-brand-100);
+}
+
+.date-switcher .icon-button {
+  color: var(--fg-1);
+  height: 42px;
+  width: 42px;
+}
+
+.date-switcher .icon-button:hover {
+  background: transparent;
+  color: var(--color-brand-100);
 }
 
 .date-label span,
@@ -672,7 +794,7 @@
 
 .sleep-band em {
   color: var(--fg-3);
-  font-size: 9px;
+  font-size: 11px;
   font-style: normal;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -699,7 +821,7 @@
 
 .time-block em {
   color: var(--fg-3);
-  font-size: 9px;
+  font-size: 11px;
   font-style: normal;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -783,6 +905,15 @@
   gap: 6px;
   height: 34px;
   padding: 0 10px;
+}
+
+.category-emoji {
+  align-items: center;
+  display: inline-flex;
+  font-size: 14px;
+  justify-content: center;
+  line-height: 1;
+  width: 18px;
 }
 
 .category-picker button.active {
@@ -1082,6 +1213,11 @@
   border: 1px dashed var(--stroke-2);
 }
 
+.heatmap-row span.empty {
+  background: var(--bg-subtle);
+  opacity: 0.55;
+}
+
 .stats-bottom {
   display: grid;
   gap: 14px;
@@ -1149,6 +1285,57 @@
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
 
+.palette-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.palette-list {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+}
+
+.palette-list button {
+  align-items: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--stroke-2);
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  text-align: left;
+}
+
+.palette-list button.active {
+  border-color: var(--color-brand-100);
+  box-shadow: 0 0 0 2px var(--color-brand-tint-60);
+}
+
+.palette-list span {
+  color: var(--fg-1);
+  font-size: 12px;
+  font-weight: 800;
+  width: 100%;
+}
+
+.palette-list i {
+  border: 1px solid var(--stroke-2);
+  border-radius: 999px;
+  display: flex;
+  height: 18px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.palette-list b {
+  flex: 1;
+}
+
 .category-card {
   display: flex;
   flex-direction: column;
@@ -1174,6 +1361,41 @@
   color: var(--fg-4);
 }
 
+.category-edit-row {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 54px minmax(0, 1fr);
+}
+
+.category-edit-row .text-input {
+  border-radius: 10px;
+  font-size: 13px;
+  min-height: 32px;
+}
+
+.category-edit-row .text-input:disabled {
+  background: var(--bg-subtle);
+  color: var(--fg-3);
+  cursor: not-allowed;
+}
+
+.category-color-picker {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.category-color-picker button {
+  border: 1px solid var(--stroke-2);
+  border-radius: 999px;
+  cursor: pointer;
+  height: 22px;
+}
+
+.category-color-picker button.active {
+  box-shadow: 0 0 0 2px var(--bg-surface), 0 0 0 4px var(--fg-1);
+}
+
 .category-card > i {
   border-radius: 999px;
   height: 9px;
@@ -1187,6 +1409,10 @@
 
 .timeline-settings-card {
   margin-bottom: 14px;
+}
+
+.timeline-settings-card > .panel-message {
+  border-radius: 0;
 }
 
 .timeline-settings-controls {
@@ -1244,7 +1470,7 @@
 
 .login-page {
   align-items: center;
-  background: var(--bg-canvas);
+  background: linear-gradient(180deg, rgba(229, 238, 232, 0.62), rgba(255, 253, 248, 0) 62%), var(--bg-canvas);
   display: flex;
   justify-content: center;
   min-height: 100vh;
@@ -1252,20 +1478,66 @@
 }
 
 .login-card {
+  background: var(--bg-surface);
+  border-radius: 16px;
+  box-shadow: var(--shadow-8);
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  width: min(420px, 100%);
+  gap: 14px;
+  padding: 28px;
+  text-align: center;
+  width: min(390px, 100%);
+}
+
+.login-brand {
+  justify-content: center;
 }
 
 .login-card h1 {
-  font-size: 26px;
-  margin: 8px 0 0;
+  font-size: 24px;
+  line-height: 30px;
+  margin: 0;
 }
 
 .login-card p {
   color: var(--fg-3);
   margin: 0;
+}
+
+.google-login-button {
+  align-items: center;
+  background: var(--color-brand-100);
+  border: 0;
+  border-radius: 12px;
+  color: white;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 14px;
+  font-weight: 900;
+  gap: 9px;
+  height: 42px;
+  justify-content: center;
+  margin-top: 2px;
+  padding: 0 16px;
+  width: 100%;
+}
+
+.google-login-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.google-login-button span {
+  align-items: center;
+  background: white;
+  border-radius: 50%;
+  color: var(--color-brand-100);
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 900;
+  height: 22px;
+  justify-content: center;
+  width: 22px;
 }
 
 .login-message,
