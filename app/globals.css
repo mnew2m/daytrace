@@ -4,6 +4,14 @@
   --color-brand-80: #365848;
   --color-brand-70: #2f4f40;
   --color-brand-tint-60: #e5eee8;
+  --color-accent-coral: #d76f5f;
+  --color-accent-coral-bg: #fae8e1;
+  --color-accent-gold: #c99543;
+  --color-accent-gold-bg: #f8ecd3;
+  --color-accent-sky: #5d8fb8;
+  --color-accent-sky-bg: #e5eef6;
+  --color-accent-plum: #806c9f;
+  --color-accent-plum-bg: #ece7f4;
   --color-success: #4f7b68;
   --color-success-bg: #e5eee8;
   --color-warning: #bc7a52;
@@ -38,7 +46,11 @@ body {
 }
 
 body {
-  background: var(--bg-canvas);
+  background:
+    linear-gradient(135deg, rgba(229, 238, 232, 0.96), rgba(247, 245, 240, 0.36) 34%, rgba(248, 236, 211, 0.62)),
+    radial-gradient(circle at 14% 12%, rgba(215, 111, 95, 0.16), transparent 28%),
+    radial-gradient(circle at 86% 8%, rgba(93, 143, 184, 0.18), transparent 26%),
+    var(--bg-canvas);
   color: var(--fg-1);
   font-family: var(--font-base);
   font-size: 14px;
